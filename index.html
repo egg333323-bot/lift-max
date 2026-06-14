@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Lift Max</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;500;600&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080808;
+      --surface: #111111;
+      --border: #252525;
+      --red: #d92b2b;
+      --red-glow: rgba(217, 43, 43, 0.4);
+      --gold: #c9a84c;
+      --gold-light: #f0cc6e;
+      --gold-glow: rgba(201, 168, 76, 0.3);
+      --text: #f2f2f2;
+      --muted: #666;
+      --blue: #5b9cf6;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Landing ── */
+    #landing {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    #landing.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.94);
+    }
+
+    .brand-lockup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 2.8rem;
+    }
+
+    .brand-icons {
+      font-size: 2rem;
+      letter-spacing: 0.3em;
+      margin-bottom: 0.6rem;
+    }
+
+    .brand-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: clamp(3.5rem, 10vw, 6rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 0.9;
+      background: linear-gradient(160deg, var(--gold-light) 0%, var(--gold) 55%, #8a6a1f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-sub {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+
+    #lift-btn {
+      position: relative;
+      background: radial-gradient(circle at 38% 35%, #ff4444, var(--red) 60%, #8a0f0f);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 190px;
+      height: 190px;
+      cursor: pointer;
+      transition: transform 0.18s, box-shadow 0.2s;
+      box-shadow: 0 0 0 6px rgba(217,43,43,0.15), 0 0 50px var(--red-glow), 0 8px 32px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    #lift-btn::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 1px solid rgba(217,43,43,0.2);
+      animation: pulse-ring 2.4s ease-out infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%   { transform: scale(1);    opacity: 0.6; }
+      70%  { transform: scale(1.18); opacity: 0; }
+      100% { transform: scale(1.18); opacity: 0; }
+    }
+
+    #lift-btn:hover {
+      transform: scale(1.07) translateY(-3px);
+      box-shadow: 0 0 0 8px rgba(217,43,43,0.12), 0 0 80px var(--red-glow), 0 16px 40px rgba(0,0,0,0.7);
+    }
+
+    #lift-btn:active { transform: scale(0.97); }
+
+    .tap-hint {
+      margin-top: 1.8rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+    }
+
+    /* ── Calc screen ── */
+    #calc-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 24px 0 40px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease 0.05s, transform 0.4s ease 0.05s;
+      transform: translateY(24px);
+    }
+
+    #calc-screen.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .calc-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--gold);
+      border-radius: 4px 4px 12px 12px;
+      padding: 2.2rem 2.6rem 2.4rem;
+      width: min(480px, 94vw);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 40px var(--gold-glow);
+    }
+
+    .calc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .calc-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 1.6rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    #back-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    #back-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    .inputs-row {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+
+    .field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .optional-tag {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: #444;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    input[type="number"] {
+      background: #0d0d0d;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      padding: 11px 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    input[type="number"]:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.18);
+    }
+
+    #num-bw:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(91,156,246,0.15);
+    }
+
+    .separator {
+      font-size: 1.6rem;
+      color: var(--border);
+      padding-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    #calc-btn {
+      background: linear-gradient(135deg, var(--red) 0%, #b01e1e 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 15px;
+      cursor: pointer;
+      transition: filter 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px var(--red-glow);
+    }
+
+    #calc-btn:hover {
+      filter: brightness(1.15);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px var(--red-glow);
+    }
+
+    #calc-btn:active { transform: translateY(0); filter: brightness(0.95); }
+
+    #error-msg {
+      font-size: 0.8rem;
+      color: var(--red);
+      font-family: 'Barlow', sans-serif;
+      font-weight: 600;
+      min-height: 1.1em;
+      margin-top: -0.5rem;
+    }
+
+    /* ── 1RM Result ── */
+    #result-area {
+      display: none;
+      flex-direction: column;
+      gap: 0.3rem;
+      animation: fadeUp 0.3s ease;
+    }
+
+    #result-area.show { display: flex; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .orm-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 1.6rem;
+      flex-wrap: wrap;
+    }
+
+    .orm-block { display: flex; flex-direction: column; gap: 0.25rem; }
+
+    .orm-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .orm-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 3rem;
+      color: var(--gold-light);
+      line-height: 1;
+      text-shadow: 0 0 30px var(--gold-glow);
+    }
+
+    .bw-ratio-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 2rem;
+      color: var(--blue);
+      line-height: 1;
+    }
+
+    /* ── Percentage Table ── */
+    #pct-table-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 0.8rem;
+      animation: fadeUp 0.35s ease 0.1s both;
+    }
+
+    #pct-table-wrap.show { display: flex; }
+
+    .table-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding-top: 0.2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead th {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 6px 8px;
+      text-align: right;
+    }
+
+    thead th:first-child { text-align: left; }
+
+    tbody tr {
+      border-bottom: 1px solid #1a1a1a;
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    tbody td {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 7px 6px;
+      color: var(--text);
+      text-align: right;
+    }
+
+    tbody td:first-child {
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+    }
+
+    tbody td.weight-col { color: var(--gold); }
+    tbody td.bwpct-col  { color: var(--blue); }
+
+    tbody tr.highlight-100 td { color: var(--gold-light); }
+    tbody tr.highlight-100 td.weight-col { color: var(--gold-light); font-size: 1.05rem; }
+    tbody tr.highlight-100 td.bwpct-col  { color: var(--blue); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LANDING -->
+  <div id="landing">
+    <div class="brand-lockup">
+      <div class="brand-icons">🏈 🏆 💪</div>
+      <div class="brand-name">Lift Max</div>
+      <div class="brand-sub">Performance Calculator</div>
+    </div>
+
+    <button id="lift-btn" aria-label="Open Lift Max Calculator">💪</button>
+
+    <p class="tap-hint">tap to calculate</p>
+  </div>
+
+  <!-- CALCULATOR -->
+  <div id="calc-screen" aria-live="polite">
+    <div class="calc-box">
+
+      <div class="calc-header">
+        <h1 class="calc-title">💪 Lift Max</h1>
+        <button id="back-btn">← Back</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Weight + Reps -->
+      <div class="inputs-row">
+        <div class="field">
+          <label for="num-a">Weight</label>
+          <input type="number" id="num-a" placeholder="e.g. 225" step="any" min="0" />
+        </div>
+        <div class="separator">,</div>
+        <div class="field">
+          <label for="num-b">Reps</label>
+          <input type="number" id="num-b" placeholder="e.g. 8" step="1" min="1" />
+        </div>
+      </div>
+
+      <!-- Body Weight -->
+      <div class="field">
+        <label for="num-bw">Body Weight <span class="optional-tag">optional</span></label>
+        <input type="number" id="num-bw" placeholder="e.g. 185" step="any" min="0" />
+      </div>
+
+      <p id="error-msg" role="alert"></p>
+
+      <button id="calc-btn">🏆 Calculate 1RM</button>
+
+      <!-- 1RM result -->
+      <div id="result-area">
+        <div class="orm-row">
+          <div class="orm-block">
+            <p class="orm-label">Estimated 1-Rep Max</p>
+            <p class="orm-value" id="result-value">—</p>
+          </div>
+          <div class="orm-block" id="bw-ratio-block" style="display:none">
+            <p class="orm-label">BW Multiplier</p>
+            <p class="bw-ratio-value" id="bw-ratio-value">—</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Percentage breakdown table -->
+      <div id="pct-table-wrap">
+        <p class="table-title">Rep & Weight Breakdown</p>
+        <table>
+          <thead>
+            <tr>
+              <th>% of Max</th>
+              <th>Reps</th>
+              <th>Weight</th>
+              <th id="bwpct-header" style="display:none">BW Mult</th>
+            </tr>
+          </thead>
+          <tbody id="pct-tbody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const landing        = document.getElementById('landing');
+    const calcScreen     = document.getElementById('calc-screen');
+    const liftBtn        = document.getElementById('lift-btn');
+    const backBtn        = document.getElementById('back-btn');
+    const calcBtn        = document.getElementById('calc-btn');
+    const numA           = document.getElementById('num-a');
+    const numB           = document.getElementById('num-b');
+    const numBW          = document.getElementById('num-bw');
+    const resultArea     = document.getElementById('result-area');
+    const resultVal      = document.getElementById('result-value');
+    const bwRatioBlock   = document.getElementById('bw-ratio-block');
+    const bwRatioVal     = document.getElementById('bw-ratio-value');
+    const pctWrap        = document.getElementById('pct-table-wrap');
+    const pctTbody       = document.getElementById('pct-tbody');
+    const bwpctHeader    = document.getElementById('bwpct-header');
+    const errorMsg       = document.getElementById('error-msg');
+
+    function repsAtPct(pct) {
+      return Math.max(1, Math.round((1 / pct - 1) * 30));
+    }
+
+    function fmt(n, dec = 1) {
+      return n.toLocaleString(undefined, { maximumFractionDigits: dec });
+    }
+
+    function buildTable(orm, bw) {
+      pctTbody.innerHTML = '';
+      const showBW = bw > 0;
+
+      bwpctHeader.style.display = showBW ? '' : 'none';
+
+      for (let p = 100; p >= 40; p -= 5) {
+        const frac   = p / 100;
+        const weight = orm * frac;
+        const reps   = repsAtPct(frac);
+        const tr     = document.createElement('tr');
+        if (p === 100) tr.classList.add('highlight-100');
+
+        let bwCell = '';
+        if (showBW) {
+          const bwMult = weight / bw;
+          bwCell = `<td class="bwpct-col">${fmt(bwMult, 2)}x</td>`;
+        }
+
+        tr.innerHTML = `
+          <td>${p}%</td>
+          <td>${reps}</td>
+          <td class="weight-col">${fmt(weight)}</td>
+          ${bwCell}
+        `;
+        pctTbody.appendChild(tr);
+      }
+    }
+
+    function showCalc() {
+      landing.classList.add('hidden');
+      calcScreen.classList.add('visible');
+      numA.focus();
+    }
+
+    function showLanding() {
+      calcScreen.classList.remove('visible');
+      calcScreen.scrollTop = 0;
+      landing.classList.remove('hidden');
+      resetResult();
+    }
+
+    function resetResult() {
+      resultArea.classList.remove('show');
+      pctWrap.classList.remove('show');
+      resultVal.textContent = '—';
+      bwRatioBlock.style.display = 'none';
+      bwRatioVal.textContent = '—';
+      pctTbody.innerHTML = '';
+      errorMsg.textContent = '';
+    }
+
+    function calculate() {
+      errorMsg.textContent = '';
+      const weight = parseFloat(numA.value);
+      const reps   = parseFloat(numB.value);
+      const bw     = parseFloat(numBW.value) || 0;
+
+      if (numA.value.trim() === '' || numB.value.trim() === '') {
+        errorMsg.textContent = 'Enter both weight and reps.';
+        resultArea.classList.remove('show');
+        pctWrap.classList.remove('show');
+        return;
+      }
+      if (isNaN(weight) || isNaN(reps)) {
+        errorMsg.textContent = 'Both inputs must be valid numbers.';
+        resultArea.classList.remove('show');
+        pctWrap.classList.remove('show');
+        return;
+      }
+
+      const orm = weight * (1 + reps / 30);
+      resultVal.textContent = fmt(orm);
+
+      if (bw > 0) {
+        bwRatioVal.textContent = fmt(orm / bw, 2) + 'x';
+        bwRatioBlock.style.display = '';
+      } else {
+        bwRatioBlock.style.display = 'none';
+      }
+
+      resultArea.classList.add('show');
+      buildTable(orm, bw);
+      pctWrap.classList.add('show');
+    }
+
+    liftBtn.addEventListener('click', showCalc);
+    backBtn.addEventListener('click', showLanding);
+    calcBtn.addEventListener('click', calculate);
+
+    [numA, numB, numBW].forEach(input => {
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+      input.addEventListener('input', resetResult);
+    });
+  </script>
+</body>
+</html>
