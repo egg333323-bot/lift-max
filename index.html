@@ -457,7 +457,7 @@
     <div class="brand-lockup">
       <div class="brand-icons">🏈 🏆 💪</div>
       <div class="brand-name">Lift Max</div>
-      <div class="brand-sub">Performance Calculator</div>
+      <div class="brand-sub">StrengthLevel Formula</div>
     </div>
 
     <button id="lift-btn" aria-label="Open Lift Max Calculator">💪</button>
@@ -558,6 +558,24 @@
       return n.toLocaleString(undefined, { maximumFractionDigits: dec });
     }
 
+    function calculate1RM(weight, reps) {
+      if (reps === 1) return weight;
+
+      const epley = weight * (1 + reps / 30);
+      const brzycki = weight * (36 / (37 - reps));
+
+      let oneRM;
+      if (reps < 8) {
+        oneRM = brzycki;
+      } else if (reps > 10) {
+        oneRM = epley;
+      } else {
+        const factor = (reps - 8) / 2;
+        oneRM = brzycki * (1 - factor) + epley * factor;
+      }
+      return Math.round(oneRM * 10) / 10;
+    }
+
     function buildTable(orm, bw) {
       pctTbody.innerHTML = '';
       const showBW = bw > 0;
@@ -629,7 +647,7 @@
         return;
       }
 
-      const orm = weight * (1 + reps / 30);
+      const orm = calculate1RM(weight, reps);
       resultVal.textContent = fmt(orm);
 
       if (bw > 0) {
